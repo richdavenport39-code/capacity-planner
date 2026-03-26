@@ -3,81 +3,952 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Capacity Planner — Signing in…</title>
-<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.10.0/lib/msal-browser.min.js"></script>
+<title>Resource Capacity Planner</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
 <style>
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-  .box { background: #fff; border-radius: 12px; padding: 40px; text-align: center; max-width: 420px; border: 0.5px solid rgba(0,0,0,0.12); }
-  h2 { font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #1a1a18; }
-  p  { font-size: 14px; color: #6b6b67; line-height: 1.6; }
-  .spinner { width: 32px; height: 32px; border: 3px solid #e0e0e0; border-top-color: #3266ad; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .success { color: #3b6d11; font-weight: 600; }
-  .error   { color: #a32d2d; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff;--bg2:#f5f5f3;--bg3:#eeede8;
+  --text:#1a1a18;--text2:#6b6b67;--text3:#9a9a94;
+  --border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.22);
+  --blue:#3266ad;--blue-bg:#e6f1fb;--blue-text:#185fa5;
+  --green:#3b6d11;--green-bg:#eaf3de;
+  --amber:#854f0b;--amber-bg:#faeeda;
+  --red:#a32d2d;--red-bg:#fcebeb;--red-border:#f7c1c1;
+  --radius:8px;--radius-lg:12px;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#1e1e1c;--bg2:#2a2a28;--bg3:#323230;
+    --text:#f0efea;--text2:#a0a09a;--text3:#6a6a64;
+    --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
+    --blue-bg:#0c2a4a;--blue-text:#85b7eb;
+    --green-bg:#1a3308;--amber-bg:#3a2004;
+    --red-bg:#3a1010;--red-border:#7a2020;
+  }
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg3);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5}
+.app-shell{max-width:1100px;margin:0 auto;padding:24px 16px}
+.app-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+.app-title{font-size:20px;font-weight:600}
+.app-subtitle{font-size:13px;color:var(--text2);margin-top:2px}
+.save-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.card{background:var(--bg);border-radius:var(--radius-lg);border:0.5px solid var(--border);overflow:hidden}
+.tabs{display:flex;border-bottom:0.5px solid var(--border);background:var(--bg);overflow-x:auto}
+.tab{padding:12px 20px;font-size:13px;cursor:pointer;border:none;background:none;color:var(--text2);border-bottom:2px solid transparent;white-space:nowrap;font-family:inherit}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:500}
+.panel{display:none;padding:24px}
+.panel.active{display:block}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.section-title{font-size:14px;font-weight:600}
+.btn{padding:7px 14px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);cursor:pointer;color:var(--text);font-family:inherit;transition:background 0.12s}
+.btn:hover{background:var(--bg2)}
+.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn-primary:hover{background:#285490}
+.btn-danger{color:var(--red);border-color:var(--red-border)}
+.btn-danger:hover{background:var(--red-bg)}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn-xs{padding:2px 8px;font-size:11px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 12px;font-weight:500;color:var(--text2);border-bottom:0.5px solid var(--border);font-size:12px;background:var(--bg2)}
+td{padding:10px 12px;border-bottom:0.5px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--bg2)}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:500}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-amber{background:var(--amber-bg);color:var(--amber)}
+.badge-red{background:var(--red-bg);color:var(--red)}
+.badge-blue{background:var(--blue-bg);color:var(--blue-text)}
+.badge-gray{background:var(--bg2);color:var(--text2);border:0.5px solid var(--border)}
+input[type=text],input[type=number],input[type=date],select{border:0.5px solid var(--border2);border-radius:var(--radius);padding:7px 10px;font-size:13px;background:var(--bg);color:var(--text);width:100%;font-family:inherit}
+input:focus,select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(50,102,173,0.18)}
+.capacity-bar{height:7px;border-radius:4px;background:var(--bg3);overflow:hidden;min-width:70px}
+.capacity-fill{height:100%;border-radius:4px;transition:width 0.3s}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:200}
+.modal{background:var(--bg);border-radius:var(--radius-lg);border:0.5px solid var(--border);padding:24px;width:480px;max-width:96vw;max-height:92vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:20px}
+.form-row{margin-bottom:14px}
+.form-label{font-size:12px;color:var(--text2);margin-bottom:5px;display:block}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:0.5px solid var(--border)}
+.gantt-wrap{overflow-x:auto;border:0.5px solid var(--border);border-radius:var(--radius)}
+.gantt-head-row{display:flex;background:var(--bg2);border-bottom:0.5px solid var(--border)}
+.gantt-row{display:flex;align-items:center;border-bottom:0.5px solid var(--border);min-height:44px}
+.gantt-row:last-child{border-bottom:none}
+.gantt-row:hover{background:var(--bg2)}
+.gantt-label{width:180px;min-width:180px;font-size:13px;padding:0 14px;overflow:hidden}
+.gantt-label-name{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gantt-label-sub{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gantt-month-cell{display:inline-block;border-right:0.5px solid var(--border);text-align:center;font-size:11px;color:var(--text2);padding:6px 0}
+.gantt-bar{position:absolute;height:22px;top:50%;transform:translateY(-50%);border-radius:4px;display:flex;align-items:center;padding:0 7px;font-size:10px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.today-line{position:absolute;top:0;bottom:0;width:1.5px;background:#E24B4A;opacity:0.5;pointer-events:none;z-index:10}
+.metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:700px){.metrics-grid{grid-template-columns:repeat(2,1fr)}}
+.metric-card{background:var(--bg2);border-radius:var(--radius);padding:14px 16px}
+.metric-label{font-size:12px;color:var(--text2);margin-bottom:4px}
+.metric-value{font-size:24px;font-weight:600;line-height:1}
+.metric-sub{font-size:12px;color:var(--text2);margin-top:4px}
+.alert{padding:10px 14px;border-radius:var(--radius);font-size:13px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;border:0.5px solid transparent}
+.alert-red{background:var(--red-bg);color:var(--red);border-color:var(--red-border)}
+.alert-amber{background:var(--amber-bg);color:var(--amber);border-color:#fac775}
+.alert-green{background:var(--green-bg);color:var(--green);border-color:#c0dd97}
+.alert-blue{background:var(--blue-bg);color:var(--blue-text);border-color:#a8ccee}
+.alert-icon{font-weight:700;font-size:13px;flex-shrink:0}
+.sim-tag{font-size:10px;padding:1px 6px;border-radius:99px;background:var(--blue-bg);color:var(--blue-text);font-weight:600;margin-left:6px;vertical-align:middle}
+.controls-row{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.controls-row label{font-size:12px;color:var(--text2);cursor:pointer}
+.controls-row select{width:auto;font-size:12px;padding:5px 8px}
+.empty-state{text-align:center;padding:32px;color:var(--text2);font-size:13px}
+.divider{border:none;border-top:0.5px solid var(--border);margin:20px 0}
+.assign-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:0.5px solid var(--border)}
+.assign-row:last-child{border-bottom:none}
+.assign-name{flex:1;font-size:13px}
+.assign-cap{font-size:11px;color:var(--text2)}
+.assign-input{width:70px;text-align:right}
+.impact-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--border)}
+.impact-row:last-child{border-bottom:none}
+.impact-name{width:130px;min-width:130px;font-size:13px;font-weight:500}
+.impact-bars{flex:1}
+.impact-bar-row{display:flex;align-items:center;gap:6px}
+.impact-bar-label{width:40px;font-size:11px;color:var(--text2)}
+.impact-pct{width:38px;text-align:right;font-size:12px;font-weight:500}
+.impact-delta{width:100px;text-align:right;font-size:12px}
+.save-indicator{font-size:12px;color:var(--text2);transition:opacity 0.4s;opacity:0}
+
+/* SharePoint sync status banner */
+.sync-banner{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:var(--radius);font-size:12px;margin-bottom:16px;border:0.5px solid transparent;transition:all 0.3s}
+.sync-banner.hidden{display:none}
+.sync-banner.syncing{background:var(--blue-bg);color:var(--blue-text);border-color:#a8ccee}
+.sync-banner.synced{background:var(--green-bg);color:var(--green);border-color:#c0dd97}
+.sync-banner.error{background:var(--red-bg);color:var(--red);border-color:var(--red-border)}
+.sync-banner.offline{background:var(--amber-bg);color:var(--amber);border-color:#fac775}
+.sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:currentColor}
+.sync-dot.spin{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Auth state banner */
+.auth-banner{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.auth-banner.hidden{display:none}
+.auth-info{font-size:13px}
+.auth-name{font-weight:500}
+.auth-detail{font-size:11px;color:var(--text2);margin-top:2px}
+
+footer{text-align:center;color:var(--text3);font-size:11px;margin-top:24px;padding-bottom:16px}
 </style>
 </head>
 <body>
-<div class="box">
-  <div class="spinner" id="spinner"></div>
-  <h2 id="title">Completing sign-in…</h2>
-  <p id="msg">Please wait while we finish authenticating you. This window will close automatically.</p>
+<div class="app-shell">
+
+  <div class="app-header">
+    <div>
+      <div class="app-title">Resource Capacity Planner</div>
+      <div class="app-subtitle" id="header-subtitle">Connecting to SharePoint…</div>
+    </div>
+    <div class="save-bar">
+      <span class="save-indicator" id="save-status"></span>
+      <button class="btn btn-sm btn-primary" onclick="manualSave()">Save to SharePoint</button>
+      <button class="btn btn-sm" onclick="exportData()">Export JSON</button>
+      <label class="btn btn-sm" style="cursor:pointer">Import JSON
+        <input type="file" accept=".json" onchange="importData(event)" style="display:none"/>
+      </label>
+    </div>
+  </div>
+
+  <!-- Auth banner (shown when signed out or on error) -->
+  <div class="auth-banner hidden" id="auth-banner">
+    <div class="auth-info">
+      <div class="auth-name" id="auth-name">Not signed in</div>
+      <div class="auth-detail" id="auth-detail">Sign in with your Microsoft account to sync with SharePoint</div>
+    </div>
+    <button class="btn btn-primary btn-sm" id="auth-btn" onclick="handleAuthBtn()">Sign in</button>
+  </div>
+
+  <!-- Sync status banner -->
+  <div class="sync-banner hidden" id="sync-banner">
+    <div class="sync-dot" id="sync-dot"></div>
+    <span id="sync-msg">—</span>
+  </div>
+
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('resources')">Resources</button>
+      <button class="tab" onclick="switchTab('projects')">Projects</button>
+      <button class="tab" onclick="switchTab('gantt')">Timeline</button>
+      <button class="tab" onclick="switchTab('forecast')">Forecast</button>
+      <button class="tab" onclick="switchTab('simulate')">Simulate</button>
+    </div>
+
+    <!-- RESOURCES -->
+    <div class="panel active" id="panel-resources">
+      <div class="section-header">
+        <span class="section-title">Team resources</span>
+        <button class="btn btn-primary btn-sm" onclick="openModal('resource')">+ Add resource</button>
+      </div>
+      <table><thead><tr><th>Name</th><th>Role</th><th>Capacity</th><th>Current load</th><th>Utilization</th><th></th></tr></thead>
+      <tbody id="resources-tbody"></tbody></table>
+    </div>
+
+    <!-- PROJECTS -->
+    <div class="panel" id="panel-projects">
+      <div class="section-header">
+        <span class="section-title">Projects</span>
+        <button class="btn btn-primary btn-sm" onclick="openModal('project')">+ Add project</button>
+      </div>
+      <table><thead><tr>
+        <th onclick="sortProjects('name')" style="cursor:pointer;user-select:none">Project <span id="sort-icon-name">↕</span></th>
+        <th onclick="sortProjects('status')" style="cursor:pointer;user-select:none">Status <span id="sort-icon-status">↕</span></th>
+        <th onclick="sortProjects('start')" style="cursor:pointer;user-select:none">Start <span id="sort-icon-start">↕</span></th>
+        <th onclick="sortProjects('end')" style="cursor:pointer;user-select:none">End <span id="sort-icon-end">↕</span></th>
+        <th>Assigned resources</th><th>Total hrs/wk</th><th></th>
+      </tr></thead>
+      <tbody id="projects-tbody"></tbody></table>
+    </div>
+
+    <!-- GANTT -->
+    <div class="panel" id="panel-gantt">
+      <div class="section-header"><span class="section-title">Timeline (Gantt)</span></div>
+      <div class="controls-row">
+        <label>Resource:</label>
+        <select id="gantt-filter" onchange="renderGantt()"><option value="">All</option></select>
+        <label>Window:</label>
+        <select id="gantt-window" onchange="renderGantt()">
+          <option value="6">6 months</option><option value="9">9 months</option>
+          <option value="12" selected>12 months</option><option value="18">18 months</option><option value="24">24 months</option>
+        </select>
+        <label><input type="checkbox" id="gantt-show-sim" onchange="renderGantt()" checked> Show simulated</label>
+      </div>
+      <div id="gantt-container"></div>
+    </div>
+
+    <!-- FORECAST -->
+    <div class="panel" id="panel-forecast">
+      <div class="section-header"><span class="section-title">Capacity forecast</span></div>
+      <div class="controls-row">
+        <label>Months ahead:</label>
+        <select id="forecast-window" onchange="renderForecast()">
+          <option value="6">6 months</option><option value="12" selected>12 months</option>
+          <option value="18">18 months</option><option value="24">24 months</option>
+        </select>
+        <label><input type="checkbox" id="forecast-include-sim" onchange="renderForecast()"> Include simulated</label>
+      </div>
+      <div class="metrics-grid" id="forecast-metrics"></div>
+      <div id="forecast-alerts" style="margin-bottom:16px"></div>
+      <div style="position:relative;width:100%;height:300px"><canvas id="forecast-chart"></canvas></div>
+      <hr class="divider">
+      <div class="section-title" style="margin-bottom:12px">Per-resource utilization</div>
+      <div id="resource-forecast-table"></div>
+    </div>
+
+    <!-- SIMULATE -->
+    <div class="panel" id="panel-simulate">
+      <div class="section-header">
+        <span class="section-title">What-if simulation <span class="sim-tag">BETA</span></span>
+        <button class="btn btn-primary btn-sm" onclick="openModal('sim-project')">+ Add simulated project</button>
+      </div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Add hypothetical projects to preview capacity impact without affecting the real plan.</p>
+      <table><thead><tr><th>Project</th><th>Start</th><th>End</th><th>Assigned</th><th>Hrs/wk</th><th></th></tr></thead>
+      <tbody id="sim-tbody"></tbody></table>
+      <hr class="divider">
+      <div id="sim-impact"></div>
+    </div>
+  </div>
+
+  <footer>Resource Capacity Planner &mdash; Data synced to SharePoint &bull; Use Export JSON for local backup</footer>
 </div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" style="display:none" onclick="overlayClick(event)">
+  <div class="modal" id="modal-inner"></div>
+</div>
+
 <script>
-// This page exists solely to handle the Microsoft auth redirect.
-// MSAL sends the auth code/token here, we process it, then this
-// window closes and the local HTML app receives the token.
-(async () => {
-  try {
-    // Check if this is actually an auth redirect (has code or error in URL)
-    const params = new URLSearchParams(window.location.search);
-    const hash   = window.location.hash;
-    const isAuthRedirect = params.has('code') || params.has('error') ||
-                           hash.includes('access_token') || hash.includes('code=') ||
-                           hash.includes('error=') || sessionStorage.getItem('msal.interaction.status');
+/* ================================================================
+   CONFIGURATION  — edit these if your setup changes
+   ================================================================ */
+const CONFIG = {
+  clientId:    'ee941be6-dafb-4003-bc31-7f2661ef577c',
+  tenantId:    'common',                              // or your tenant GUID / 'organizations'
+  redirectUri: 'https://richdavenport39-code.github.io/capacity-planner/',
+  siteHostname:'appriver3651003924.sharepoint.com',
+  sitePath:    '/sites/CustomerExperience',
+  listName:    'CapacityPlannerData',
+  itemTitle:   'main',
+};
 
-    if (!isAuthRedirect && !sessionStorage.length) {
-      // Not an auth redirect — show the app info page instead
-      document.getElementById('spinner').style.display = 'none';
-      document.getElementById('title').textContent = 'Resource Capacity Planner';
-      document.getElementById('msg').innerHTML =
-        'This page handles Microsoft sign-in for the <strong>Resource Capacity Planner</strong>. ' +
-        'To use the planner, open the <code>resource_capacity_planner.html</code> file on your computer.';
-      return;
+/* ================================================================
+   STATE
+   ================================================================ */
+let state = { resources: [], projects: [], simProjects: [], nextId: 1 };
+let forecastChart  = null;
+let projectSort    = { key: null, dir: 1 };
+let autoSaveTimer  = null;
+let spListId       = null;   // cached after first lookup
+let spItemId       = null;   // ID of the "main" list item
+let msalInstance   = null;
+let currentAccount = null;
+let isSignedIn     = false;
+
+const STORAGE_KEY  = 'capacity-planner-v4';   // localStorage fallback key
+const GRAPH_SCOPES = ['https://graph.microsoft.com/Sites.ReadWrite.All'];
+
+/* ================================================================
+   MSAL SETUP
+   ================================================================ */
+function initMSAL() {
+  msalInstance = new msal.PublicClientApplication({
+    auth: {
+      clientId:    CONFIG.clientId,
+      authority:   `https://login.microsoftonline.com/${CONFIG.tenantId}`,
+      redirectUri: CONFIG.redirectUri,
+      navigateToLoginRequestUrl: false,
+    },
+    cache: {
+      cacheLocation: 'sessionStorage',  // sessionStorage avoids cross-tab conflicts
+      storeAuthStateInCookie: false,
+    },
+    system: {
+      allowNativeBroker: false,
+      windowHashTimeout: 60000,
+      iframeHashTimeout: 6000,
+      loadFrameTimeout:  0,
     }
+  });
+}
 
-    // Get the stored client ID from the opener window or localStorage
-    const clientId = localStorage.getItem('cp-client-id') ||
-                     (window.opener && window.opener.localStorage && window.opener.localStorage.getItem('cp-client-id'));
+// Guard: only one popup at a time
+let _popupInProgress = false;
 
-    if (!clientId) {
-      throw new Error('Client ID not found. Please reopen the app and try signing in again.');
+async function acquireToken() {
+  // 1. Try silent first
+  const accounts = msalInstance.getAllAccounts();
+  if (accounts.length > 0) {
+    try {
+      const resp = await msalInstance.acquireTokenSilent({
+        scopes:  GRAPH_SCOPES,
+        account: accounts[0],
+      });
+      currentAccount = accounts[0];
+      return resp.accessToken;
+    } catch(e) {
+      // silent failed — fall through to popup
     }
-
-    const msalInstance = new msal.PublicClientApplication({
-      auth: {
-        clientId:    clientId,
-        authority:   'https://login.microsoftonline.com/common',
-        redirectUri: 'https://richdavenport39-code.github.io/capacity-planner/'
-      },
-      cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: true }
-    });
-
-    await msalInstance.initialize();
-    await msalInstance.handleRedirectPromise();
-
-    document.getElementById('spinner').style.display = 'none';
-    document.getElementById('title').innerHTML = '<span class="success">✓ Signed in successfully</span>';
-    document.getElementById('msg').textContent = 'You can close this window and return to the Capacity Planner.';
-
-    // Close popup after short delay if opened as popup
-    setTimeout(() => { try { window.close(); } catch(e) {} }, 1500);
-
-  } catch(e) {
-    document.getElementById('spinner').style.display = 'none';
-    document.getElementById('title').innerHTML = '<span class="error">Sign-in error</span>';
-    document.getElementById('msg').textContent = e.message + '. Close this window and try again.';
   }
-})();
+  // 2. Interactive popup — guard against interaction_in_progress error
+  if (_popupInProgress) {
+    throw new Error('Sign-in already in progress — please complete the popup window.');
+  }
+  _popupInProgress = true;
+  try {
+    const resp = await msalInstance.acquireTokenPopup({ scopes: GRAPH_SCOPES });
+    currentAccount = resp.account;
+    return resp.accessToken;
+  } catch(e) {
+    // Clear stale MSAL interaction state so the next attempt works
+    sessionStorage.removeItem('msal.interaction.status');
+    throw new Error('Sign-in cancelled or failed: ' + e.message);
+  } finally {
+    _popupInProgress = false;
+  }
+}
+
+async function handleAuthBtn() {
+  setSyncState('syncing', 'Signing in…');
+  try {
+    await acquireToken();
+    isSignedIn = true;
+    updateAuthBanner();
+    await loadFromSharePoint();
+  } catch(e) {
+    setSyncState('error', 'Sign-in failed. ' + e.message);
+  }
+}
+
+async function signOut() {
+  if (!msalInstance) return;
+  await msalInstance.logoutPopup({ account: currentAccount });
+  currentAccount = null;
+  isSignedIn = false;
+  updateAuthBanner();
+  setSyncState('offline', 'Signed out — changes saved locally only');
+}
+
+function updateAuthBanner() {
+  const banner  = document.getElementById('auth-banner');
+  const nameEl  = document.getElementById('auth-name');
+  const detail  = document.getElementById('auth-detail');
+  const btn     = document.getElementById('auth-btn');
+  const subtitle= document.getElementById('header-subtitle');
+
+  if (isSignedIn && currentAccount) {
+    nameEl.textContent  = currentAccount.name || currentAccount.username;
+    detail.textContent  = 'Syncing to SharePoint · ' + CONFIG.siteHostname + CONFIG.sitePath;
+    btn.textContent     = 'Sign out';
+    btn.onclick         = signOut;
+    subtitle.textContent= 'Synced with SharePoint';
+    // Hide auth banner after a moment once signed in
+    setTimeout(() => banner.classList.add('hidden'), 2000);
+  } else {
+    banner.classList.remove('hidden');
+    nameEl.textContent  = 'Not signed in';
+    detail.textContent  = 'Sign in with your Microsoft account to sync with SharePoint';
+    btn.textContent     = 'Sign in';
+    btn.onclick         = handleAuthBtn;
+    subtitle.textContent= 'Local only — sign in to sync';
+  }
+}
+
+/* ================================================================
+   SYNC STATUS UI
+   ================================================================ */
+function setSyncState(type, msg) {
+  const banner = document.getElementById('sync-banner');
+  const dot    = document.getElementById('sync-dot');
+  const msgEl  = document.getElementById('sync-msg');
+  banner.className = 'sync-banner ' + type;
+  dot.className    = 'sync-dot' + (type === 'syncing' ? ' spin' : '');
+  msgEl.textContent = msg;
+  if (type === 'synced') {
+    setTimeout(() => banner.classList.add('hidden'), 3000);
+  }
+}
+
+function showSaveStatus(s) {
+  const el = document.getElementById('save-status');
+  if (s==='saved')   { el.textContent='All changes saved'; el.style.color='var(--green)'; el.style.opacity='1'; setTimeout(()=>el.style.opacity='0',2500); }
+  if (s==='unsaved') { el.textContent='Unsaved changes…';  el.style.color='var(--text2)'; el.style.opacity='1'; }
+  if (s==='error')   { el.textContent='Save failed';       el.style.color='var(--red)';   el.style.opacity='1'; }
+}
+
+/* ================================================================
+   GRAPH API HELPERS
+   ================================================================ */
+async function graphRequest(method, path, body) {
+  const token = await acquireToken();
+  const opts = {
+    method,
+    headers: {
+      'Authorization': 'Bearer ' + token,
+      'Content-Type':  'application/json',
+      'Accept':        'application/json',
+    },
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const resp = await fetch('https://graph.microsoft.com/v1.0' + path, opts);
+  if (!resp.ok) {
+    const err = await resp.text();
+    throw new Error(`Graph ${method} ${path} → ${resp.status}: ${err}`);
+  }
+  if (resp.status === 204) return null;
+  return resp.json();
+}
+
+async function getSiteId() {
+  const data = await graphRequest('GET',
+    `/sites/${CONFIG.siteHostname}:${CONFIG.sitePath}`);
+  return data.id;
+}
+
+async function getListId(siteId) {
+  if (spListId) return spListId;
+  const data = await graphRequest('GET',
+    `/sites/${siteId}/lists?$filter=displayName eq '${encodeURIComponent(CONFIG.listName)}'&$select=id,displayName`);
+  if (!data.value || data.value.length === 0)
+    throw new Error(`SharePoint list "${CONFIG.listName}" not found. Please follow the setup steps.`);
+  spListId = data.value[0].id;
+  return spListId;
+}
+
+/* ================================================================
+   SHAREPOINT READ / WRITE
+   ================================================================ */
+async function loadFromSharePoint() {
+  setSyncState('syncing', 'Loading data from SharePoint…');
+  try {
+    const siteId  = await getSiteId();
+    const listId  = await getListId(siteId);
+
+    // Find the "main" item
+    const data = await graphRequest('GET',
+      `/sites/${siteId}/lists/${listId}/items?$filter=fields/Title eq '${CONFIG.itemTitle}'&$expand=fields&$select=id,fields`);
+
+    if (data.value && data.value.length > 0) {
+      const item = data.value[0];
+      spItemId   = item.id;
+      const raw  = item.fields.PlanData;
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.resources) {
+            state = {
+              resources:   parsed.resources   || [],
+              projects:    parsed.projects    || [],
+              simProjects: parsed.simProjects || [],
+              nextId:      parsed.nextId      || 1,
+            };
+          }
+        } catch(e) {
+          console.warn('Could not parse PlanData JSON from SharePoint', e);
+        }
+      }
+    }
+    // else: no item yet — will be created on first save
+
+    isSignedIn = true;
+    updateAuthBanner();
+    setSyncState('synced', 'Loaded from SharePoint');
+    renderAll();
+  } catch(e) {
+    console.error('SharePoint load error', e);
+    setSyncState('error', 'SharePoint load failed: ' + e.message + ' — using local data');
+    // Fall back to localStorage
+    loadLocalFallback();
+    renderAll();
+  }
+}
+
+async function saveToSharePoint() {
+  if (!isSignedIn) {
+    // Fall back to localStorage
+    persistLocal();
+    return;
+  }
+  setSyncState('syncing', 'Saving to SharePoint…');
+  showSaveStatus('unsaved');
+  try {
+    const siteId  = await getSiteId();
+    const listId  = await getListId(siteId);
+    const payload = { fields: { Title: CONFIG.itemTitle, PlanData: JSON.stringify(state) } };
+
+    if (spItemId) {
+      // Update existing item
+      await graphRequest('PATCH',
+        `/sites/${siteId}/lists/${listId}/items/${spItemId}`,
+        payload);
+    } else {
+      // Create new item
+      const created = await graphRequest('POST',
+        `/sites/${siteId}/lists/${listId}/items`,
+        payload);
+      spItemId = created.id;
+    }
+
+    // Also keep localStorage in sync as a local cache
+    persistLocal();
+    setSyncState('synced', 'Saved to SharePoint');
+    showSaveStatus('saved');
+  } catch(e) {
+    console.error('SharePoint save error', e);
+    setSyncState('error', 'SharePoint save failed: ' + e.message);
+    showSaveStatus('error');
+    // Still save locally
+    persistLocal();
+  }
+}
+
+/* ================================================================
+   LOCAL STORAGE FALLBACK
+   ================================================================ */
+function persistLocal() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+function loadLocalFallback() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (s && s.resources)
+      state = { resources: s.resources, projects: s.projects||[], simProjects: s.simProjects||[], nextId: s.nextId||1 };
+  } catch(e) {}
+}
+
+/* ================================================================
+   PERSISTENCE — unified entry points
+   ================================================================ */
+function scheduleAutoSave() {
+  showSaveStatus('unsaved');
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(() => { autoSaveTimer = null; saveToSharePoint(); }, 2000);
+}
+
+function manualSave() {
+  clearTimeout(autoSaveTimer); autoSaveTimer = null;
+  const btn = event.target;
+  btn.textContent = 'Saving…';
+  btn.disabled    = true;
+  saveToSharePoint().finally(() => {
+    btn.textContent = 'Saved ✓';
+    btn.disabled    = false;
+    setTimeout(() => btn.textContent = 'Save to SharePoint', 2000);
+  });
+}
+
+/* ================================================================
+   IMPORT / EXPORT
+   ================================================================ */
+function exportData() {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' }));
+  a.download = 'capacity-plan-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+}
+
+function importData(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const imp = JSON.parse(e.target.result);
+      if (!imp.resources || !imp.projects) throw new Error('Invalid format');
+      state = { resources: imp.resources, projects: imp.projects, simProjects: imp.simProjects||[], nextId: imp.nextId||100 };
+      saveToSharePoint(); renderAll();
+    } catch(err) { alert('Import failed: ' + err.message); }
+  };
+  reader.readAsText(file); event.target.value = '';
+}
+
+/* ================================================================
+   UTILS
+   ================================================================ */
+function uid()    { return state.nextId++; }
+function byId(id) { return state.resources.find(r => r.id == id); }
+function fmtDate(d) { if (!d) return '—'; return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function fmtMonth(d) { return d.toLocaleDateString('en-US',{month:'short',year:'2-digit'}); }
+function getUtilColor(pct) { return pct>=100?'#E24B4A':pct>=85?'#EF9F27':'#639922'; }
+function getLoadNow(rid, incSim) {
+  const today = new Date();
+  return [...state.projects,...(incSim?state.simProjects:[])].reduce((s,p) => {
+    const a=new Date(p.start),b=new Date(p.end);
+    if (a<=today&&b>=today) { const x=p.assignments.find(a=>a.rid==rid); if(x) s+=x.hrs; }
+    return s;
+  }, 0);
+}
+function getMonthLoad(rid,year,month,incSim) {
+  const mS=new Date(year,month,1),mE=new Date(year,month+1,0);
+  return [...state.projects,...(incSim?state.simProjects:[])].reduce((s,p) => {
+    const a=new Date(p.start),b=new Date(p.end);
+    if (a<=mE&&b>=mS) { const x=p.assignments.find(a=>a.rid==rid); if(x) s+=x.hrs; }
+    return s;
+  }, 0);
+}
+function renderAll() { renderResources(); renderProjects(); }
+
+/* ================================================================
+   TABS
+   ================================================================ */
+function switchTab(name) {
+  const names = ['resources','projects','gantt','forecast','simulate'];
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', names[i]===name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  if (name==='gantt')    renderGantt();
+  if (name==='forecast') renderForecast();
+  if (name==='simulate') renderSim();
+}
+
+/* ================================================================
+   RESOURCES
+   ================================================================ */
+function renderResources() {
+  const tbody = document.getElementById('resources-tbody');
+  if (!state.resources.length) { tbody.innerHTML='<tr><td colspan="6" class="empty-state">No resources yet. Click + Add resource to get started.</td></tr>'; return; }
+  tbody.innerHTML = state.resources.map(r => {
+    const load=getLoadNow(r.id,false), pct=Math.round(load/r.capacity*100), col=getUtilColor(pct);
+    return `<tr>
+      <td><strong>${r.name}</strong></td>
+      <td><span class="badge badge-blue">${r.role}</span></td>
+      <td>${r.capacity}h/wk</td><td>${load}h/wk</td>
+      <td><div style="display:flex;align-items:center;gap:8px">
+        <div class="capacity-bar" style="flex:1;min-width:90px"><div class="capacity-fill" style="width:${Math.min(pct,100)}%;background:${col}"></div></div>
+        <span style="font-size:12px;font-weight:600;color:${col};min-width:38px;text-align:right">${pct}%</span>
+      </div></td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-xs btn-sm" onclick="openEditResource(${r.id})" style="margin-right:4px">Edit</button>
+        <button class="btn btn-xs btn-sm btn-danger" onclick="deleteResource(${r.id})">Remove</button>
+      </td></tr>`;
+  }).join('');
+}
+
+function deleteResource(id) {
+  if (!confirm('Remove this resource and all their assignments?')) return;
+  state.resources = state.resources.filter(r=>r.id!=id);
+  state.projects.forEach(p=>p.assignments=p.assignments.filter(a=>a.rid!=id));
+  state.simProjects.forEach(p=>p.assignments=p.assignments.filter(a=>a.rid!=id));
+  scheduleAutoSave(); renderResources(); renderProjects();
+}
+
+/* ================================================================
+   PROJECTS
+   ================================================================ */
+function sortProjects(key) {
+  projectSort = projectSort.key===key ? {key,dir:projectSort.dir*-1} : {key,dir:1};
+  renderProjects();
+}
+function getSorted() {
+  const {key,dir} = projectSort; if (!key) return state.projects;
+  return [...state.projects].sort((a,b)=>{const av=(a[key]||'').toLowerCase(),bv=(b[key]||'').toLowerCase();return av<bv?-dir:av>bv?dir:0;});
+}
+function updateSortIcons() {
+  ['name','status','start','end'].forEach(k=>{
+    const el=document.getElementById('sort-icon-'+k); if(!el) return;
+    el.textContent=projectSort.key===k?(projectSort.dir===1?'↑':'↓'):'↕';
+    el.parentElement.style.color=projectSort.key===k?'var(--blue)':'';
+  });
+}
+function renderProjects() {
+  const tbody=document.getElementById('projects-tbody');
+  if (!state.projects.length) { tbody.innerHTML='<tr><td colspan="7" class="empty-state">No projects yet.</td></tr>'; }
+  else tbody.innerHTML = getSorted().map(p => {
+    const names=p.assignments.map(a=>{const r=byId(a.rid);return r?r.name.split(' ')[0]:'?';}).join(', ');
+    const total=p.assignments.reduce((s,a)=>s+a.hrs,0);
+    const sc=p.status==='active'?'badge-green':p.status==='planned'?'badge-amber':'badge-gray';
+    return `<tr>
+      <td><strong>${p.name}</strong></td>
+      <td><span class="badge ${sc}">${p.status}</span></td>
+      <td>${fmtDate(p.start)}</td><td>${fmtDate(p.end)}</td>
+      <td style="color:var(--text2);font-size:12px">${names||'—'}</td>
+      <td>${total}h</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-xs btn-sm" onclick="openEditProject(${p.id})" style="margin-right:4px">Edit</button>
+        <button class="btn btn-xs btn-sm" onclick="openCloneProject(${p.id})" style="margin-right:4px">Clone</button>
+        <button class="btn btn-xs btn-sm btn-danger" onclick="deleteProject(${p.id},false)">Remove</button>
+      </td></tr>`;
+  }).join('');
+  updateSortIcons();
+}
+function deleteProject(id,isSim) {
+  if (!confirm('Remove this project?')) return;
+  if (isSim) state.simProjects=state.simProjects.filter(p=>p.id!=id);
+  else       state.projects=state.projects.filter(p=>p.id!=id);
+  scheduleAutoSave();
+  if (isSim) renderSim(); else { renderProjects(); renderResources(); }
+}
+
+/* ================================================================
+   GANTT
+   ================================================================ */
+const BAR_COLORS=['#3266ad','#1D9E75','#D85A30','#B05FA6','#854F0B','#185FA5','#3B6D11','#993C1D','#634AB7','#7A5C00'];
+function renderGantt() {
+  const filterRid=document.getElementById('gantt-filter').value;
+  const months=parseInt(document.getElementById('gantt-window').value);
+  const showSim=document.getElementById('gantt-show-sim').checked;
+  const today=new Date(); today.setDate(1);
+  const wS=new Date(today),wE=new Date(today); wE.setMonth(wE.getMonth()+months);
+  const mList=[]; let cur=new Date(wS); while(cur<wE){mList.push(new Date(cur));cur.setMonth(cur.getMonth()+1);}
+  const colW=Math.max(55,Math.floor(820/months)),totalW=colW*months;
+  const allP=showSim?[...state.projects,...state.simProjects]:state.projects;
+  const filtered=filterRid?allP.filter(p=>p.assignments.some(a=>a.rid==filterRid)):allP;
+  function toX(d){const dt=typeof d==='string'?new Date(d+'T00:00:00'):d;return Math.round(Math.max(0,Math.min((dt-wS)/(864e5*30.44)*colW,totalW)));}
+  let html=`<div class="gantt-wrap"><div style="min-width:${totalW+180}px">`;
+  html+=`<div class="gantt-head-row"><div class="gantt-label" style="padding:8px 14px;font-size:12px;font-weight:500;color:var(--text2)">Project</div><div style="flex:1;display:flex">${mList.map(m=>`<div class="gantt-month-cell" style="width:${colW}px">${fmtMonth(m)}</div>`).join('')}</div></div>`;
+  if (!filtered.length) html+=`<div style="padding:24px;text-align:center;color:var(--text2);font-size:13px">No projects to display.</div>`;
+  filtered.forEach((p,i)=>{
+    const isSim=!!p.simulated,color=BAR_COLORS[i%BAR_COLORS.length];
+    const names=p.assignments.map(a=>{const r=byId(a.rid);return r?r.name.split(' ')[0]:'?';}).join(', ');
+    const x1=toX(p.start),eD=new Date(p.end+'T00:00:00');eD.setMonth(eD.getMonth()+1);eD.setDate(1);
+    const bw=Math.max(toX(eD)-x1,6),todX=toX(new Date());
+    html+=`<div class="gantt-row"><div class="gantt-label"><div class="gantt-label-name">${p.name}${isSim?'<span class="sim-tag">sim</span>':''}</div><div class="gantt-label-sub">${names}</div></div><div class="gantt-timeline" style="position:relative;height:44px;width:${totalW}px"><div class="today-line" style="left:${todX}px"></div><div class="gantt-bar" style="left:${x1}px;width:${bw}px;background:${color};opacity:${isSim?0.65:1}">${bw>40?p.name:''}</div></div></div>`;
+  });
+  html+=`</div></div>`;
+  document.getElementById('gantt-container').innerHTML=html;
+  const sel=document.getElementById('gantt-filter'); const cv=sel.value;
+  sel.innerHTML=`<option value="">All</option>`+state.resources.map(r=>`<option value="${r.id}" ${r.id==cv?'selected':''}>${r.name}</option>`).join('');
+}
+
+/* ================================================================
+   FORECAST
+   ================================================================ */
+function renderForecast() {
+  const months=parseInt(document.getElementById('forecast-window').value);
+  const incSim=document.getElementById('forecast-include-sim').checked;
+  const today=new Date();
+  const mL=[],mD=[];
+  for(let i=0;i<months;i++){const d=new Date(today.getFullYear(),today.getMonth()+i,1);mD.push(d);mL.push(fmtMonth(d));}
+  const totalCap=state.resources.reduce((s,r)=>s+r.capacity,0);
+  const overNow=state.resources.filter(r=>getLoadNow(r.id,false)>r.capacity).length;
+  let peakPct=0,peakLabel='';
+  const mPct=[],alerts=[];
+  mD.forEach((d,i)=>{
+    let load=0; state.resources.forEach(r=>{load+=getMonthLoad(r.id,d.getFullYear(),d.getMonth(),incSim);});
+    const pct=totalCap>0?Math.round(load/totalCap*100):0; mPct.push(pct);
+    if(pct>peakPct){peakPct=pct;peakLabel=mL[i];}
+    if(pct>=100) alerts.push({t:'red',m:`${mL[i]}: team at ${pct}% — hire or descope.`});
+    else if(pct>=85) alerts.push({t:'amber',m:`${mL[i]}: team at ${pct}% — approaching limit.`});
+  });
+  document.getElementById('forecast-metrics').innerHTML=`
+    <div class="metric-card"><div class="metric-label">Total capacity</div><div class="metric-value">${totalCap}h</div><div class="metric-sub">${state.resources.length} resources/week</div></div>
+    <div class="metric-card"><div class="metric-label">Projects</div><div class="metric-value">${state.projects.length}</div><div class="metric-sub">${state.projects.filter(p=>p.status==='active').length} active</div></div>
+    <div class="metric-card"><div class="metric-label">Overloaded now</div><div class="metric-value" style="color:${overNow>0?'#A32D2D':'#3B6D11'}">${overNow}</div><div class="metric-sub">resource${overNow!==1?'s':''} over cap</div></div>
+    <div class="metric-card"><div class="metric-label">Peak utilization</div><div class="metric-value" style="color:${getUtilColor(peakPct)}">${peakPct}%</div><div class="metric-sub">${peakLabel}</div></div>`;
+  document.getElementById('forecast-alerts').innerHTML=alerts.slice(0,6).map(a=>`<div class="alert alert-${a.t}"><span class="alert-icon">${a.t==='red'?'!':'△'}</span><span>${a.m}</span></div>`).join('')||`<div class="alert alert-green"><span class="alert-icon">✓</span><span>Capacity looks healthy across the forecast window.</span></div>`;
+  if(forecastChart)forecastChart.destroy();
+  forecastChart=new Chart(document.getElementById('forecast-chart'),{
+    type:'bar',data:{labels:mL,datasets:[
+      {label:'Utilization %',data:mPct,backgroundColor:mPct.map(v=>v>=100?'rgba(226,75,74,0.85)':v>=85?'rgba(239,159,39,0.85)':'rgba(50,102,173,0.75)'),borderRadius:3,barPercentage:0.7},
+      {label:'100% line',data:Array(months).fill(100),type:'line',borderColor:'#E24B4A',borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw}%`}}},
+      scales:{y:{min:0,max:Math.max(120,Math.max(...mPct)+15),ticks:{callback:v=>v+'%',font:{size:11}},grid:{color:'rgba(128,128,128,0.1)'}},x:{ticks:{font:{size:11}},grid:{display:false}}}}
+  });
+  const rows=state.resources.map(r=>{
+    const cells=mD.map(d=>{const l=getMonthLoad(r.id,d.getFullYear(),d.getMonth(),incSim);const pct=r.capacity>0?Math.round(l/r.capacity*100):0;return `<td style="text-align:center;padding:6px 8px"><span style="font-size:12px;font-weight:500;color:${getUtilColor(pct)}">${pct>0?pct+'%':'—'}</span></td>`;}).join('');
+    return `<tr><td style="font-weight:500;white-space:nowrap;padding:8px 12px">${r.name}</td><td style="padding:8px 12px"><span class="badge badge-blue">${r.role}</span></td>${cells}</tr>`;
+  }).join('');
+  document.getElementById('resource-forecast-table').innerHTML=`<div style="overflow-x:auto"><table style="min-width:600px"><thead><tr><th>Resource</th><th>Role</th>${mL.map(l=>`<th style="text-align:center">${l}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+/* ================================================================
+   SIMULATE
+   ================================================================ */
+function renderSim() {
+  const tbody=document.getElementById('sim-tbody');
+  if(!state.simProjects.length){tbody.innerHTML='<tr><td colspan="6" class="empty-state">No simulated projects yet.</td></tr>';document.getElementById('sim-impact').innerHTML='';return;}
+  tbody.innerHTML=state.simProjects.map(p=>{
+    const names=p.assignments.map(a=>{const r=byId(a.rid);return r?r.name.split(' ')[0]:'?';}).join(', ');
+    const total=p.assignments.reduce((s,a)=>s+a.hrs,0);
+    return `<tr>
+      <td><strong>${p.name}</strong><span class="sim-tag">sim</span></td>
+      <td>${fmtDate(p.start)}</td><td>${fmtDate(p.end)}</td>
+      <td style="color:var(--text2);font-size:12px">${names||'—'}</td>
+      <td>${total}h/wk</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-xs btn-sm" onclick="openEditSimProject(${p.id})" style="margin-right:4px">Edit</button>
+        <button class="btn btn-xs btn-sm btn-danger" onclick="deleteProject(${p.id},true)">Remove</button>
+      </td></tr>`;
+  }).join('');
+  const hA=state.resources.filter(r=>getLoadNow(r.id,true)>r.capacity).map(r=>{const ov=getLoadNow(r.id,true)-r.capacity;return `<div class="alert alert-red"><span class="alert-icon">!</span><span><strong>${r.name}</strong> overloaded by <strong>${ov}h/wk</strong> — consider hiring additional ${r.role} capacity.</span></div>`;}).join('');
+  const iR=state.resources.map(r=>{
+    const bf=getLoadNow(r.id,false),af=getLoadNow(r.id,true);if(bf===af)return null;
+    const pb=Math.round(bf/r.capacity*100),pa=Math.round(af/r.capacity*100),d=af-bf;
+    return `<div class="impact-row"><div class="impact-name">${r.name}<br><span style="font-size:11px;color:var(--text2)">${r.role}</span></div><div class="impact-bars"><div class="impact-bar-row" style="margin-bottom:5px"><span class="impact-bar-label">Before</span><div class="capacity-bar" style="flex:1"><div class="capacity-fill" style="width:${Math.min(pb,100)}%;background:${getUtilColor(pb)}"></div></div><span class="impact-pct" style="color:${getUtilColor(pb)}">${pb}%</span></div><div class="impact-bar-row"><span class="impact-bar-label">After</span><div class="capacity-bar" style="flex:1"><div class="capacity-fill" style="width:${Math.min(pa,100)}%;background:${getUtilColor(pa)}"></div></div><span class="impact-pct" style="color:${getUtilColor(pa)}">${pa}%</span></div></div><div class="impact-delta"><div style="color:${d>0?'#A32D2D':'#3B6D11'};font-weight:600">+${d}h/wk</div>${af>r.capacity?'<span class="badge badge-red" style="margin-top:4px">Over capacity</span>':''}</div></div>`;
+  }).filter(Boolean).join('');
+  document.getElementById('sim-impact').innerHTML=`<div class="section-title" style="margin-bottom:12px">Impact on current assignments</div>${hA}<div style="margin-top:${hA?'12px':'0'}">${iR||'<p style="font-size:13px;color:var(--text2)">No impact on currently active assignments.</p>'}</div>`;
+}
+
+/* ================================================================
+   MODALS
+   ================================================================ */
+function assignInputsHTML(source) {
+  return state.resources.map(r=>{
+    const val=source?(source.assignments.find(a=>a.rid==r.id)?.hrs||0):0;
+    return `<div class="assign-row"><span class="assign-name">${r.name} <span class="assign-cap">(cap: ${r.capacity}h/wk)</span></span><input type="number" class="assign-input" id="assign-${r.id}" min="0" max="${r.capacity}" value="${val}"/><span style="font-size:12px;color:var(--text2)">h/wk</span></div>`;
+  }).join('')||'<p style="font-size:13px;color:var(--text2)">Add resources first.</p>';
+}
+
+function openModal(type,editId) {
+  const overlay=document.getElementById('modal-overlay'),inner=document.getElementById('modal-inner');
+  if (type==='resource') {
+    const e=editId?state.resources.find(r=>r.id==editId):null;
+    inner.innerHTML=`
+      <div class="modal-title">${e?'Edit resource':'Add resource'}</div>
+      <div class="form-grid-2">
+        <div class="form-row"><label class="form-label">Full name</label><input type="text" id="m-name" value="${e?.name||''}" placeholder="Jane Doe"/></div>
+        <div class="form-row"><label class="form-label">Role / discipline</label><input type="text" id="m-role" value="${e?.role||''}" placeholder="Engineering"/></div>
+      </div>
+      <div class="form-row"><label class="form-label">Capacity (hours / week)</label><input type="number" id="m-cap" value="${e?.capacity||40}" min="1" max="80"/></div>
+      <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveResource(${editId||'null'})">${e?'Save changes':'Add resource'}</button></div>`;
+  } else if (type==='project'||type==='sim-project') {
+    const isSim=type==='sim-project';
+    const e=editId?(isSim?state.simProjects:state.projects).find(p=>p.id==editId):null;
+    inner.innerHTML=`
+      <div class="modal-title">${e?'Edit project':isSim?'Add simulated project':'Add project'}</div>
+      <div class="form-row"><label class="form-label">Project name</label><input type="text" id="m-name" value="${e?.name||''}" placeholder="New initiative"/></div>
+      <div class="form-grid-2">
+        <div class="form-row"><label class="form-label">Start date</label><input type="date" id="m-start" value="${e?.start||''}"/></div>
+        <div class="form-row"><label class="form-label">End date</label><input type="date" id="m-end" value="${e?.end||''}"/></div>
+      </div>
+      ${!isSim?`<div class="form-row"><label class="form-label">Status</label><select id="m-status"><option value="active" ${e?.status==='active'?'selected':''}>Active</option><option value="planned" ${e?.status==='planned'?'selected':''}>Planned</option><option value="on-hold" ${e?.status==='on-hold'?'selected':''}>On hold</option></select></div>`:''}
+      <div class="form-row"><label class="form-label" style="margin-bottom:8px">Resource assignments (hours/week)</label>${assignInputsHTML(e)}</div>
+      <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveProject(${isSim},${editId||'null'})">${e?'Save changes':isSim?'Add simulation':'Add project'}</button></div>`;
+  } else if (type==='clone-project') {
+    const src=state.projects.find(p=>p.id==editId); if(!src) return;
+    inner.innerHTML=`
+      <div class="modal-title">Clone project <span style="font-size:13px;font-weight:400;color:var(--text2)">— creates a new project</span></div>
+      <div style="background:var(--blue-bg);border-radius:var(--radius);padding:8px 12px;font-size:12px;color:var(--blue-text);margin-bottom:16px">Cloned from <strong>${src.name}</strong>. Adjust and save to create a new project.</div>
+      <div class="form-row"><label class="form-label">Project name</label><input type="text" id="m-name" value="Copy of ${src.name}"/></div>
+      <div class="form-grid-2">
+        <div class="form-row"><label class="form-label">Start date</label><input type="date" id="m-start" value="${src.start}"/></div>
+        <div class="form-row"><label class="form-label">End date</label><input type="date" id="m-end" value="${src.end}"/></div>
+      </div>
+      <div class="form-row"><label class="form-label">Status</label><select id="m-status"><option value="active" ${src.status==='active'?'selected':''}>Active</option><option value="planned" ${src.status==='planned'?'selected':''}>Planned</option><option value="on-hold" ${src.status==='on-hold'?'selected':''}>On hold</option></select></div>
+      <div class="form-row"><label class="form-label" style="margin-bottom:8px">Resource assignments (hours/week)</label>${assignInputsHTML(src)}</div>
+      <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveProject(false,null)">Create cloned project</button></div>`;
+  }
+  overlay.style.display='flex';
+}
+
+function openEditProject(id)    { openModal('project',id); }
+function openCloneProject(id)   { openModal('clone-project',id); }
+function openEditResource(id)   { openModal('resource',id); }
+function openEditSimProject(id) { openModal('sim-project',id); }
+function overlayClick(e)        { if(e.target===document.getElementById('modal-overlay'))closeModal(); }
+function closeModal()           { document.getElementById('modal-overlay').style.display='none'; }
+
+function saveResource(editId) {
+  const name=document.getElementById('m-name').value.trim();
+  const role=document.getElementById('m-role').value.trim();
+  const cap=parseInt(document.getElementById('m-cap').value);
+  if(!name||!role||!cap){alert('Please fill in all fields.');return;}
+  if(editId){const idx=state.resources.findIndex(r=>r.id==editId);if(idx>-1)state.resources[idx]={...state.resources[idx],name,role,capacity:cap};}
+  else state.resources.push({id:uid(),name,role,capacity:cap});
+  scheduleAutoSave();closeModal();renderResources();
+}
+
+function saveProject(isSim,editId) {
+  const name=document.getElementById('m-name').value.trim();
+  const start=document.getElementById('m-start').value;
+  const end=document.getElementById('m-end').value;
+  if(!name||!start||!end){alert('Please fill in all required fields.');return;}
+  if(start>end){alert('End date must be after start date.');return;}
+  const status=isSim?'simulated':(document.getElementById('m-status')?.value||'planned');
+  const assignments=state.resources.map(r=>{const v=parseInt(document.getElementById('assign-'+r.id)?.value)||0;return v>0?{rid:r.id,hrs:v}:null;}).filter(Boolean);
+  if(editId){
+    if(isSim){const idx=state.simProjects.findIndex(p=>p.id==editId);if(idx>-1)state.simProjects[idx]={...state.simProjects[idx],name,start,end,assignments};scheduleAutoSave();closeModal();renderSim();}
+    else{const idx=state.projects.findIndex(p=>p.id==editId);if(idx>-1)state.projects[idx]={...state.projects[idx],name,status,start,end,assignments};scheduleAutoSave();closeModal();renderProjects();renderResources();}
+    return;
+  }
+  const proj={id:uid(),name,status,start,end,assignments,simulated:isSim};
+  if(isSim){state.simProjects.push(proj);scheduleAutoSave();closeModal();renderSim();}
+  else{state.projects.push(proj);scheduleAutoSave();closeModal();renderProjects();renderResources();}
+}
+
+/* ================================================================
+   INIT — runs on page load
+   ================================================================ */
+async function init() {
+  // 1. Show local data immediately so UI isn't blank while auth resolves
+  loadLocalFallback();
+  renderAll();
+
+  // 2. Init MSAL
+  initMSAL();
+
+  // 3. Handle redirect callback (not usually needed for popup flow, but safe to include)
+  try {
+    await msalInstance.handleRedirectPromise();
+  } catch(e) {
+    console.warn('handleRedirectPromise:', e);
+  }
+
+  // 4. Check if we already have a cached session
+  const accounts = msalInstance.getAllAccounts();
+  if (accounts.length > 0) {
+    // Already signed in — try silent token + load from SP
+    currentAccount = accounts[0];
+    isSignedIn     = true;
+    updateAuthBanner();
+    await loadFromSharePoint();
+  } else {
+    // Not signed in — show auth banner, use local data
+    updateAuthBanner();
+    setSyncState('offline', 'Not signed in — data is local only. Sign in to sync with SharePoint.');
+    document.getElementById('sync-banner').classList.remove('hidden');
+  }
+}
+
+init();
 </script>
 </body>
 </html>
