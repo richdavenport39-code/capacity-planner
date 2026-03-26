@@ -46,12 +46,8 @@
     }
 
     // Get the stored client ID from the opener window or localStorage
-    const clientId = localStorage.getItem('cp-client-id') ||
-                     (window.opener && window.opener.localStorage && window.opener.localStorage.getItem('cp-client-id'));
-
-    if (!clientId) {
-      throw new Error('Client ID not found. Please reopen the app and try signing in again.');
-    }
+    // Client ID is hardcoded here — must match the local HTML file
+    const clientId = 'ee941be6-dafb-4003-bc31-7f2661ef577c';
 
     const msalInstance = new msal.PublicClientApplication({
       auth: {
